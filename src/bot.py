@@ -1,7 +1,8 @@
 # bot.py
 import os
-import discord
 import random
+
+from discord import guild
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -16,6 +17,7 @@ bot = commands.Bot("gw!")
 async def on_ready():
     print(f'{bot.user} ready!')
     bot.load_extension('cogs.music')
+
 
 @bot.command(name='gerawow',help='gerawow')
 async def gerawow(ctx):

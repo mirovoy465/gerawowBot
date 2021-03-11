@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import Embed
+from discord import Embed, Colour
 import lavalink
 import re
 url_rx = re.compile(r'https?://(?:www\.)?.+')
@@ -60,7 +60,7 @@ class MusicCog(commands.Cog):
                 for track in tracks:
                     i+=1
                     query_result = query_result + f'{i}) {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] - {track["info"]["uri"]}\n'
-                embed = Embed()
+                embed = Embed(title="Список треков.",colour=Colour.blue())
                 embed.description = query_result
                 
                 await ctx.send(embed=embed)
@@ -70,12 +70,20 @@ class MusicCog(commands.Cog):
                 
                 response = await self.bot.wait_for('message', check = check) 
 
-                track = tracks[int(response.content) - 1]
+                if int(response.content):
+                    track = tracks[int(response.content) - 1]
+                else:
+                    await ctx.channel.purge(limit=1)
+                    await ctx.send("Отмена.")
+                    return
+
             else:
                 results = await player.node.get_tracks(query)
                 track = results['tracks'][0]
 
             player.add(requester = ctx.author.id, track = track)
+
+            await ctx.channel.purge(limit=3)
 
             if player.is_playing:
                 await ctx.send(f'Композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] добавлена в очередь по просьбе {ctx.author.name}!')
@@ -84,6 +92,8 @@ class MusicCog(commands.Cog):
                 await ctx.send(f'Играет композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] по просьбе {ctx.author.name}')
                 await player.play()
         
+            
+
         except Exception as error:
             await ctx.send(error)
 
@@ -110,6 +120,7 @@ class MusicCog(commands.Cog):
     async def stop(self,ctx):
         player = self.bot.music.player_manager.get(ctx.guild.id)
         await self.ensure_voice(ctx)
+        await ctx.channel.purge(limit=1)
         await ctx.send(f'Вечеринка окончена по просьбе {ctx.author.name}...')
         player.queue.clear()
         await player.stop()
@@ -120,6 +131,7 @@ class MusicCog(commands.Cog):
     async def skip(self,ctx):
         player = self.bot.music.player_manager.get(ctx.guild.id)
         await self.ensure_voice(ctx)
+        await ctx.channel.purge(limit=1)
         await ctx.send(f'Скипаем трек по просьбе {ctx.author.name}.')
         await player.skip()
 
@@ -128,6 +140,7 @@ class MusicCog(commands.Cog):
     async def set_volume(self,ctx, *, vol : float):
         player = self.bot.music.player_manager.get(ctx.guild.id)
         await player.set_volume(vol*10)
+        await ctx.channel.purge(limit=1)
         await ctx.send(f'Установлена громкость {vol}%')
 
 
@@ -138,6 +151,7 @@ class MusicCog(commands.Cog):
         bass_gain_list = [(0,0.7,),(1,0.7,),(2,0.7,),(3,0.7,),(4,0.7,),(5,0.7)]
 
         if type == "bass":
+            await ctx.channel.purge(limit=1)
             await ctx.send("bass")
             await player.set_gains(*bass_gain_list)
         else:

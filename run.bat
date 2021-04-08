@@ -1,0 +1,1 @@
+ start Java -jar Lavalink.jar & python cli.py

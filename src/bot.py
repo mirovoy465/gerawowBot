@@ -17,9 +17,8 @@ class gerawowBot(commands.Bot):
     
     def setup(self):
         print("Booting up...")
-
         for cog in self._cogs:
-            self.load_extension(f'cogs.{cog}')
+            self.load_extension(f'src.cogs.{cog}')
             print(f'Loaded cog: {cog}!')
 
         print("Setup complete!")
@@ -50,7 +49,6 @@ class gerawowBot(commands.Bot):
         if not message.author.bot:
             await self.process_commands(message)
     
-
-
-bot = gerawowBot()
-bot.run()
+def main():
+    bot = gerawowBot()
+    bot.run()

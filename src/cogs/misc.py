@@ -13,9 +13,6 @@ class MiscCog(commands.Cog):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(error.original)
 
-    @commands.command(name='gerawow',help='gerawow')
-    async def gerawow(self,ctx):
-        await ctx.send("gerawow")
 
     @commands.command(name='roll',help='Выдаёт случайное число от 1 до введённого (по умолчанию до 100).')
     async def roll(self, ctx, num:int=100):
@@ -27,16 +24,22 @@ class MiscCog(commands.Cog):
 
     @commands.command(name="mute")
     async def mute(self, ctx, targets:Greedy[Member], hours:Optional[int]):
-        unmutes = []
         for target in targets:
             await target.edit(mute=True)
+            print(f'muted {target.name} for {hours} hours' )
             if hours:
-                unmutes.append(target)
-            if len(unmutes):
                 await sleep(hours)
                 await target.edit(mute=False)
+                print(f'{target.name} unmuted!' )
+        
 
         await ctx.channel.purge(limit=2)
-        
+    
+    @commands.command(name="unmute")
+    async def unmute(self, ctx, targets:Greedy[Member], hours:Optional[int]):
+        for target in targets:
+            await target.edit(mute=False)
+        await ctx.channel.purge(limit=2)
+
 def setup(bot):
     bot.add_cog(MiscCog(bot))

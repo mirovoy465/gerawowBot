@@ -45,10 +45,13 @@ class MusicCog(commands.Cog):
                 raise commands.CommandInvokeError('Ты не в том канале.')
         
 
-    @commands.command(name="play",help="Добавить в очередь композицию. Для выбора из списка написать только номер.")
-    async def play(self,ctx,*,query : str):
+    @commands.command(name="play",help="Добавить в очередь композицию. Для выбора написать только номер.")
+    async def play(self,ctx,*, query : str):
+
         try:
             player = self.bot.music.player_manager.get(ctx.guild.id)
+            # if time: 
+            #     time = parse_time(time) 
 
             if not url_rx.match(query):
                 query = f'ytsearch:{query}'
@@ -73,8 +76,9 @@ class MusicCog(commands.Cog):
                 if int(response.content):
                     track = tracks[int(response.content) - 1]
                 else:
-                    await ctx.channel.purge(limit=1)
-                    await ctx.send("Отмена.")
+                    await ctx.channel.purge(limit=3)
+                    if not player.queue:
+                        await ctx.guild.change_voice_state(channel=None)
                     return
 
             else:
@@ -90,8 +94,8 @@ class MusicCog(commands.Cog):
 
             else: 
                 await ctx.send(f'Играет композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] по просьбе {ctx.author.name}')
+                # await player.play(start_time=time)
                 await player.play()
-        
             
 
         except Exception as error:
@@ -158,6 +162,13 @@ class MusicCog(commands.Cog):
             await player.reset_equalizer()
 
 
+    @commands.command(name="fwd", help="Скипнуть к определенному моменту.\nФормат: min:sec")
+    async def fwd(self,ctx,*,time):
+        player = self.bot.music.player_manager.get(ctx.guild.id)
+
+        await player.seek(parse_time(time))
+
+
     async def track_hook(self, event):
         if isinstance(event, lavalink.events.QueueEndEvent):
             guild_id = int(event.player.guild_id)
@@ -167,7 +178,10 @@ class MusicCog(commands.Cog):
         ws = self.bot._connection._get_websocket(guild_id)
         await ws.voice_state(str(guild_id),channel_id)
     
-
+def parse_time(time_str:str):
+    minutes = int(time_str[0:time_str.index(':')])
+    seconds = int(time_str[time_str.index(':')+1:])
+    return (minutes*60+seconds)*1000
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))

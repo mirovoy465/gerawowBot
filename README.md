@@ -1,7 +1,7 @@
 <img align="right" src="https://serux.pro/9e83af1581.png" height="150" width="150">
 
 # Gerawow bot
-[![Python](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8-blue.svg)](https://www.python.org)
+[![Python](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue.svg)](https://www.python.org)
 
 Этот бот основан на библиотеке [Lavalink.py](https://github.com/Devoxin/Lavalink.py и имеет базовый функционал для проигрывания музыки.
 

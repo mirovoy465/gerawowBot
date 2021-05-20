@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from discord.ext import commands
 from dotenv import load_dotenv
+import lavalink
 
 
 load_dotenv()
@@ -38,7 +39,7 @@ class gerawowBot(commands.Bot):
         print(f'{self.user} disconnected!')
     
     async def prefix(self,bot,message):
-        return commands.when_mentioned_or("gw!")(bot,message)
+        return commands.when_mentioned_or("!")(bot,message)
 
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=commands.Context)

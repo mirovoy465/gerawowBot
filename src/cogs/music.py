@@ -9,7 +9,7 @@ class MusicCog(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.bot.music = lavalink.Client(self.bot.user.id)
-        self.bot.music.add_node('localhost',7000,'57500','eu','music-node')
+        self.bot.music.add_node('localhost',2333,'57500','eu','music-node')
         self.bot.add_listener(self.bot.music.voice_update_handler,'on_socket_response')
         self.bot.music.add_event_hook(self.track_hook)
 
@@ -56,6 +56,8 @@ class MusicCog(commands.Cog):
             if not url_rx.match(query):
                 query = f'ytsearch:{query}'
 
+                await ctx.channel.purge(limit=1)
+
                 results = await player.node.get_tracks(query)
                 tracks = results['tracks'][0:5]
                 i = 0 
@@ -71,12 +73,12 @@ class MusicCog(commands.Cog):
                 def check(m):
                     return m.author.id == ctx.author.id
                 
-                response = await self.bot.wait_for('message', check = check) 
+                response = await self.bot.wait_for('message', check = lambda m : m.author.id == ctx.author.id) 
 
                 if int(response.content):
                     track = tracks[int(response.content) - 1]
                 else:
-                    await ctx.channel.purge(limit=3)
+                    await ctx.channel.purge(limit=2)
                     if not player.queue:
                         await ctx.guild.change_voice_state(channel=None)
                     return
@@ -87,7 +89,7 @@ class MusicCog(commands.Cog):
 
             player.add(requester = ctx.author.id, track = track)
 
-            await ctx.channel.purge(limit=3)
+            await ctx.channel.purge(limit=2)
 
             if player.is_playing:
                 await ctx.send(f'Композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] добавлена в очередь по просьбе {ctx.author.name}!')

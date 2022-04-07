@@ -3,7 +3,8 @@ from discord import Embed, Colour
 import lavalink
 import re
 url_rx = re.compile(r'https?://(?:www\.)?.+')
-
+response_rx = re.compile(r"\d")
+play_rx = re.compile(r"!.... \d")
 
 class MusicCog(commands.Cog):
     def __init__(self,bot):
@@ -45,66 +46,68 @@ class MusicCog(commands.Cog):
                 raise commands.CommandInvokeError('Ты не в том канале.')
         
 
-    @commands.command(name="play",help="Добавить в очередь композицию. Для выбора написать только номер.")
+    @commands.command(name="play",aliases=['p','здфн','з','gktq','плей'], help="Добавить в очередь композицию. Для выбора написать только номер.")
     async def play(self,ctx,*, query : str):
 
         try:
             player = self.bot.music.player_manager.get(ctx.guild.id)
-            # if time: 
-            #     time = parse_time(time) 
 
-            if not url_rx.match(query):
-                query = f'ytsearch:{query}'
+            if not play_rx.match(ctx.message.content):
+                if not url_rx.match(query):
+                    query = f'ytsearch:{query}'
+
+                    # await ctx.channel.purge(limit=1)
+
+                    results = await player.node.get_tracks(query)
+                    tracks = results['tracks'][0:5]
+                    i = 0 
+                    query_result = ''
+                    for track in tracks:
+                        i+=1
+                        query_result = query_result + f'{i}) {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] - {track["info"]["uri"]}\n'
+                    embed = Embed(title="Список треков.",colour=Colour.blue())
+                    embed.description = query_result
+                    
+                    if not query_result: 
+                        await ctx.send("чел ты написал хуйню\nя гервовнулся")
+                        return
+
+                    await ctx.send(embed=embed)
+                    
+                    response = await self.bot.wait_for('message', check = lambda m : m.author.id == ctx.author.id) 
+                    
+
+                    if response_rx.search(response.content):
+                        track = tracks[int(response_rx.findall(response.content)[0]) - 1]
+                        await ctx.channel.purge(limit=1)
+                    else:
+                        await ctx.channel.purge(limit=2)
+                        return
+                    player.add(requester = ctx.author.id, track = track)
+
+                else:
+                    results = await player.node.get_tracks(query)
+                    track = results['tracks'][0]
+                    player.add(requester = ctx.author.id, track = track)
+
+            
 
                 await ctx.channel.purge(limit=1)
 
-                results = await player.node.get_tracks(query)
-                tracks = results['tracks'][0:5]
-                i = 0 
-                query_result = ''
-                for track in tracks:
-                    i+=1
-                    query_result = query_result + f'{i}) {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] - {track["info"]["uri"]}\n'
-                embed = Embed(title="Список треков.",colour=Colour.blue())
-                embed.description = query_result
+                if player.is_playing:
+                    await ctx.send(f'Композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] добавлена в очередь по просьбе {ctx.author.name}!')
+
+                else: 
+                    await ctx.send(f'Играет композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] по просьбе {ctx.author.name}')
+                    # await player.play(start_time=time)
+                    await player.play()
                 
-                await ctx.send(embed=embed)
-
-                def check(m):
-                    return m.author.id == ctx.author.id
-                
-                response = await self.bot.wait_for('message', check = lambda m : m.author.id == ctx.author.id) 
-
-                if int(response.content):
-                    track = tracks[int(response.content) - 1]
-                else:
-                    await ctx.channel.purge(limit=2)
-                    if not player.queue:
-                        await ctx.guild.change_voice_state(channel=None)
-                    return
-
-            else:
-                results = await player.node.get_tracks(query)
-                track = results['tracks'][0]
-
-            player.add(requester = ctx.author.id, track = track)
-
-            await ctx.channel.purge(limit=2)
-
-            if player.is_playing:
-                await ctx.send(f'Композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] добавлена в очередь по просьбе {ctx.author.name}!')
-
-            else: 
-                await ctx.send(f'Играет композиция {track["info"]["title"]} [{lavalink.format_time(track["info"]["length"])}] по просьбе {ctx.author.name}')
-                # await player.play(start_time=time)
-                await player.play()
-            
 
         except Exception as error:
             await ctx.send(error)
 
 
-    @commands.command(name="pause",help="Поставить плеер на паузу.")
+    @commands.command(name="pause",aliases=['зфгыу'],help="Поставить плеер на паузу.")
     async def pause(self,ctx):
 
         player = self.bot.music.player_manager.get(ctx.guild.id)
@@ -122,7 +125,7 @@ class MusicCog(commands.Cog):
         await player.set_pause(False)
 
 
-    @commands.command(name="stop",help="Останавливает плеер.")
+    @commands.command(name="stop",aliases=['ыещз','destroy'],help="Останавливает плеер.")
     async def stop(self,ctx):
         player = self.bot.music.player_manager.get(ctx.guild.id)
         await self.ensure_voice(ctx)
@@ -133,7 +136,7 @@ class MusicCog(commands.Cog):
         await ctx.guild.change_voice_state(channel=None)
 
 
-    @commands.command(name="skip",help="Пропускает трек.")
+    @commands.command(name="skip",aliases=['ылшз'],help="Пропускает трек.")
     async def skip(self,ctx):
         player = self.bot.music.player_manager.get(ctx.guild.id)
         await self.ensure_voice(ctx)
@@ -150,7 +153,7 @@ class MusicCog(commands.Cog):
         await ctx.send(f'Установлена громкость {vol}%')
 
 
-    @commands.command(name="eq", help="Эквалайзер.")
+    @commands.command(name="eq", help="Эквалайзер. !eq bass")
     async def eq(self,ctx, *,type : str):
         player = self.bot.music.player_manager.get(ctx.guild.id)
 
@@ -169,6 +172,8 @@ class MusicCog(commands.Cog):
         player = self.bot.music.player_manager.get(ctx.guild.id)
 
         await player.seek(parse_time(time))
+        await ctx.channel.purge(limit=1)
+        await ctx.send(f'Скипнул на {time}.')
 
 
     async def track_hook(self, event):
